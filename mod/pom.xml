@@ -5,11 +5,16 @@
     <parent>
         <artifactId>BaseMod-root</artifactId>
         <groupId>basemod</groupId>
-        <version>5.12.1</version>
+        <version>5.34.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>BaseMod</artifactId>
+
+    <properties>
+        <!--CHANGE THIS TO YOUR STEAM INSTALLATION-->
+        <Steam.path>C:/Program Files (x86)/Steam/steamapps/</Steam.path>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -17,14 +22,14 @@
             <artifactId>slaythespire</artifactId>
             <version>${SlayTheSpire.version}</version>
             <scope>system</scope>
-            <systemPath>${basedir}/../../lib/desktop-1.0.jar</systemPath>
+            <systemPath>${Steam.path}/common/SlayTheSpire/desktop-1.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.evacipated.cardcrawl</groupId>
             <artifactId>ModTheSpire</artifactId>
             <version>${ModTheSpire.version}</version>
             <scope>system</scope>
-            <systemPath>${basedir}/../../lib/ModTheSpire.jar</systemPath>
+            <systemPath>${Steam.path}/workshop/content/646570/1605060445/ModTheSpire.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.github.trixt0r</groupId>

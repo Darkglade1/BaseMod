@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ModPanel {
     
@@ -113,7 +114,7 @@ public class ModPanel {
     
     public void renderBg(SpriteBatch sb) {
         sb.setColor(Color.WHITE);
-        sb.draw(background, (float)Settings.WIDTH / 2.0f - 682.0f, Settings.OPTION_Y - 376.0f, 682.0f, 376.0f, 1364.0f, 752.0f, Settings.scale, Settings.scale, 0.0f, 0, 0, 1364, 752, false, false);
+        sb.draw(background, 278f * Settings.scale, Settings.OPTION_Y - 376.0f, 0f, 376.0f, 1364.0f, 752.0f, Settings.scale, Settings.scale, 0.0f, 0, 0, 1364, 752, false, false);
     }
     
     public void update() {
@@ -138,5 +139,13 @@ public class ModPanel {
             CardCrawlGame.cancelButton.hideInstantly();
             isUp = false;
         }
+    }
+
+    public ArrayList<IUIElement> getUIElements() {
+        ArrayList<IUIElement> retVal = new ArrayList<>();
+        retVal.addAll(uiElementsRender);
+        retVal.addAll(uiElementsUpdate);
+
+        return retVal.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
     }
 }

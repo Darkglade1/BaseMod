@@ -12,11 +12,12 @@ import com.megacrit.cardcrawl.screens.charSelect.CharacterOption;
 import com.megacrit.cardcrawl.screens.charSelect.CharacterSelectScreen;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 public class CustomCharacterSelectScreen extends CharacterSelectScreen {
 
     //Number of characters per selection screen. If changed update arrow positions.
-    private static final int optionsPerIndex = 4;
+    private int optionsPerIndex = 4;
     private int selectIndex = 0;
     private int maxSelectIndex;
     private int optionsIndex;
@@ -26,8 +27,16 @@ public class CustomCharacterSelectScreen extends CharacterSelectScreen {
 
     public CustomCharacterSelectScreen(){
         super();
-        leftArrow = new LeftOptionsButton("img/tinyLeftArrow.png", (int)(425 * Settings.scale),(int)(180 * Settings.scale));
-        rightArrow = new RightOptionsButton("img/tinyRightArrow.png", (int)(1425 * Settings.scale), (int)(180 * Settings.scale));
+        leftArrow = new LeftOptionsButton(
+                "images/ui/popupArrow.png",
+                (int)(425 * Settings.scale),
+                (int)((Settings.isFourByThree ? 244 : 180) * Settings.scale)
+        );
+        rightArrow = new RightOptionsButton(
+                "images/ui/popupArrow.png",
+                (int)(1425 * Settings.scale),
+                (int)((Settings.isFourByThree ? 244 : 180) * Settings.scale)
+        );
         updateOptionsIndex();
         allOptions = new ArrayList<>();
     }
@@ -41,6 +50,10 @@ public class CustomCharacterSelectScreen extends CharacterSelectScreen {
         }
         for (CharacterOption option : this.options) {
             allOptions.add(option);
+        }
+
+        if (allOptions.size() == optionsPerIndex + 1) {
+            ++optionsPerIndex;
         }
 
         selectIndex = 0;
@@ -75,11 +88,24 @@ public class CustomCharacterSelectScreen extends CharacterSelectScreen {
     private void positionButtons() {
         int count = this.options.size();
 
-        float offsetX = Settings.WIDTH / 2.0F - 2.0F * 220.0F * Settings.scale + 0.5F * 220.0F * Settings.scale;
+        float offsetX = Settings.WIDTH / 2.0F - (optionsPerIndex / 2f) * 220.0F * Settings.scale + 0.5F * 220.0F * Settings.scale;
 
         for(int i = 0; i < count; ++i) {
-            ((CharacterOption)this.options.get(i)).move(offsetX + (float)i * 220.0F * Settings.scale, 190.0F * Settings.scale);
+            this.options.get(i).hb.move(
+                    offsetX + (float)i * 220.0F * Settings.scale,
+                    (Settings.isFourByThree ? 254.0F : 190.0F) * Settings.scale
+            );
         }
+
+        leftArrow.move(
+                offsetX - 220.0F * Settings.scale,
+                (Settings.isFourByThree ? 254.0F : 190.0F) * Settings.scale
+        );
+
+        rightArrow.move(
+                offsetX + (float)count * 220.0F * Settings.scale,
+                (Settings.isFourByThree ? 254.0F : 190.0F) * Settings.scale
+        );
 
     }
 
@@ -119,15 +145,38 @@ public class CustomCharacterSelectScreen extends CharacterSelectScreen {
             this.arrow = ImageMaster.loadImage(imgUrl);
             this.x = x;
             this.y = y;
-            this.w = (int)(Settings.scale * arrow.getWidth());
-            this.h = (int)(Settings.scale * arrow.getHeight());
+            this.w = (int)(Settings.scale * arrow.getWidth() / 2f);
+            this.h = (int)(Settings.scale * arrow.getHeight() / 2f);
             this.hitbox = new Hitbox(x,y,w,h);
+        }
+
+        public void move(float newX, float newY) {
+            x = (int) (newX - w / 2f);
+            y = (int) (newY - h / 2f);
+            hitbox.move(newX, newY);
         }
 
         @Override
         public void render(SpriteBatch sb) {
-            sb.setColor(Color.WHITE);
-            sb.draw(arrow,x,y,w,h);
+            if (hitbox.hovered) {
+                sb.setColor(Color.WHITE);
+            } else {
+                sb.setColor(Color.LIGHT_GRAY);
+            }
+            float halfW = arrow.getWidth() / 2f;
+            float halfH = arrow.getHeight() / 2f;
+            sb.draw(
+                    arrow,
+                    x + 10f * Settings.xScale - halfW + halfW * 0.5f * Settings.scale, y + 10f * Settings.yScale - halfH + halfH * 0.5f * Settings.scale,
+                    halfW, halfH,
+                    arrow.getWidth(), arrow.getHeight(),
+                    0.75f * Settings.scale,
+                    0.75f * Settings.scale,
+                    0f,
+                    0, 0,
+                    arrow.getWidth(), arrow.getHeight(),
+                    false, false
+            );
             hitbox.render(sb);
         }
 
@@ -167,15 +216,38 @@ public class CustomCharacterSelectScreen extends CharacterSelectScreen {
             this.arrow = ImageMaster.loadImage(imgUrl);
             this.x = x;
             this.y = y;
-            this.w = (int)(Settings.scale * arrow.getWidth());
-            this.h = (int)(Settings.scale * arrow.getHeight());
+            this.w = (int)(Settings.scale * arrow.getWidth() / 2f);
+            this.h = (int)(Settings.scale * arrow.getHeight() / 2f);
             this.hitbox = new Hitbox(x,y,w,h);
+        }
+
+        public void move(float newX, float newY) {
+            x = (int) (newX - w / 2f);
+            y = (int) (newY - h / 2f);
+            hitbox.move(newX, newY);
         }
 
         @Override
         public void render(SpriteBatch sb) {
-            sb.setColor(Color.WHITE);
-            sb.draw(arrow,x,y,w,h);
+            if (hitbox.hovered) {
+                sb.setColor(Color.WHITE);
+            } else {
+                sb.setColor(Color.LIGHT_GRAY);
+            }
+            float halfW = arrow.getWidth() / 2f;
+            float halfH = arrow.getHeight() / 2f;
+            sb.draw(
+                    arrow,
+                    x - 10f * Settings.xScale - halfW + halfW * 0.5f * Settings.scale, y + 10f * Settings.yScale - halfH + halfH * 0.5f * Settings.scale,
+                    halfW, halfH,
+                    arrow.getWidth(), arrow.getHeight(),
+                    0.75f * Settings.scale,
+                    0.75f * Settings.scale,
+                    0f,
+                    0, 0,
+                    arrow.getWidth(), arrow.getHeight(),
+                    true, false
+            );
             hitbox.render(sb);
         }
 

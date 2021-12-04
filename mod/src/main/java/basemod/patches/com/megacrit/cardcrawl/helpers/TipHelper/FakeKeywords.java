@@ -28,11 +28,7 @@ public class FakeKeywords
     private static float TIP_DESC_LINE_SPACING = 0;
     private static float BOX_EDGE_H = 0;
 
-    @SpireInsertPatch(
-            rloc=0,
-            localvars={"y", "card"}
-    )
-    public static void Insert(float x, float _y, SpriteBatch sb, ArrayList<String> keywords, @ByRef float[] y, AbstractCard acard)
+    public static void Prefix(float x, @ByRef float[] y, SpriteBatch sb, ArrayList<String> keywords, AbstractCard ___card)
     {
         if (BODY_TEXT_WIDTH == 0) {
             getConstants();
@@ -44,6 +40,11 @@ public class FakeKeywords
         for (String s : keywords) {
             if (GameDictionary.keywords.containsKey(s)) {
                 float textHeight = -FontHelper.getSmartHeight(
+                        FontHelper.tipHeaderFont, 
+                        TipHelper.capitalize(s), 
+                        BODY_TEXT_WIDTH, 
+                        TIP_DESC_LINE_SPACING) -
+                    FontHelper.getSmartHeight(
                         FontHelper.tipBodyFont,
                         GameDictionary.keywords.get(s),
                         BODY_TEXT_WIDTH,
@@ -53,16 +54,28 @@ public class FakeKeywords
         }
 
         // Calculate height of custom tooltips
-        if (acard instanceof CustomCard) {
-            CustomCard card = (CustomCard) acard;
+        if (___card instanceof CustomCard) {
+            CustomCard card = (CustomCard) ___card;
             List<TooltipInfo> tooltips = card.getCustomTooltips();
+            List<TooltipInfo> pretooltips = card.getCustomTooltipsTop();
+            if (tooltips != null && pretooltips != null) {
+                tooltips.addAll(pretooltips);
+            } else if (tooltips == null && pretooltips != null) {
+                tooltips = pretooltips;
+            }
             if (tooltips != null) {
                 for (TooltipInfo tooltip : tooltips) {
                     float textHeight = -FontHelper.getSmartHeight(
-                            FontHelper.tipBodyFont,
-                            tooltip.description,
-                            BODY_TEXT_WIDTH,
-                            TIP_DESC_LINE_SPACING) - 7.0f * Settings.scale;
+                            FontHelper.tipHeaderFont, 
+                            TipHelper.capitalize(tooltip.title), 
+                            BODY_TEXT_WIDTH, 
+                            TIP_DESC_LINE_SPACING) - 
+	                    FontHelper.getSmartHeight(
+	                        FontHelper.tipBodyFont,
+	                        tooltip.description,
+	                        BODY_TEXT_WIDTH,
+	                        TIP_DESC_LINE_SPACING) - 7.0f * Settings.scale;
+                     textHeight -= 
                     sumTooltipHeight -= textHeight + BOX_EDGE_H * 3.15f;
                 }
             }
@@ -77,6 +90,38 @@ public class FakeKeywords
         // Cancel out the base game's hardcoded "solution"
         if (keywords.size() >= 4) {
             y[0] -= (keywords.size() - 1) * 62 * Settings.scale;
+        }
+
+        try {
+            if (___card instanceof CustomCard) {
+                CustomCard card = (CustomCard) ___card;
+                List<TooltipInfo> tooltips = card.getCustomTooltipsTop();
+                if (tooltips != null) {
+                    for (TooltipInfo tooltip : tooltips) {
+                        Field textHeight = TipHelper.class.getDeclaredField("textHeight");
+                        textHeight.setAccessible(true);
+                        float h = -FontHelper.getSmartHeight(
+                                FontHelper.tipHeaderFont,
+                                TipHelper.capitalize(tooltip.title),
+                                BODY_TEXT_WIDTH,
+                                TIP_DESC_LINE_SPACING) -
+                                FontHelper.getSmartHeight(
+                                        FontHelper.tipBodyFont,
+                                        tooltip.description,
+                                        BODY_TEXT_WIDTH,
+                                        TIP_DESC_LINE_SPACING) - 7.0f * Settings.scale;
+                        ;
+                        textHeight.set(null, h);
+
+                        Method renderTipBox = TipHelper.class.getDeclaredMethod("renderTipBox", float.class, float.class, SpriteBatch.class, String.class, String.class);
+                        renderTipBox.setAccessible(true);
+                        renderTipBox.invoke(null, x, y[0], sb, tooltip.title, tooltip.description);
+                        y[0] -= h + BOX_EDGE_H * 3.15f;
+                    }
+                }
+            }
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | NoSuchFieldException e) {
+            e.printStackTrace();
         }
     }
 
@@ -97,7 +142,16 @@ public class FakeKeywords
                     for (TooltipInfo tooltip : tooltips) {
                         Field textHeight = TipHelper.class.getDeclaredField("textHeight");
                         textHeight.setAccessible(true);
-                        float h = -FontHelper.getSmartHeight(FontHelper.tipBodyFont, tooltip.description, BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING) - 7.0f * Settings.scale;
+                        float h = -FontHelper.getSmartHeight(
+                                FontHelper.tipHeaderFont, 
+                                TipHelper.capitalize(tooltip.title), 
+                                BODY_TEXT_WIDTH, 
+                                TIP_DESC_LINE_SPACING) - 
+                            FontHelper.getSmartHeight(
+                                FontHelper.tipBodyFont,
+                                tooltip.description,
+                                BODY_TEXT_WIDTH,
+                                TIP_DESC_LINE_SPACING) - 7.0f * Settings.scale;;
                         textHeight.set(null, h);
 
                         Method renderTipBox = TipHelper.class.getDeclaredMethod("renderTipBox", float.class, float.class, SpriteBatch.class, String.class, String.class);

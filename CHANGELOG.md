@@ -568,4 +568,257 @@ This is a fast forward to v1.6.3 of daviscook477's fork with a few additional ch
 * Fix to Shrink Long Description feature, when description font size was not correct after card was upgraded (JohnnyBazooka89)
 * Fix locked cards saying "Unknown" instead of "Locked" (Seeonee)
 
+#### v5.13.0 ####
+* Allow CustomCards to use base game card atlas (kiooeht)
+* Allow CustomCards to customize how their portrait images are loaded (kiooeht)
+* Allow CustomCards to change name font size (kiooeht)
+* Fix tooltips covering up cards in SingleCardViewPopup (kiooeht)
+* Fix custom card libraries being incorrectly scaled (Seeonee)
+* Fix unlock screen visual bug with CustomRelics (Seeonee)
+* Fix event command while in combat (fiiiiilth)
+* Fix keyword tooltips to wrap if too long (bugsniper)
+* Fix DamageAllEnemiesAction to stop crash if monsters change (Alchyr)
+
+#### v5.14.0 ####
+* Support for Slay the Spire v1.1 (kiooeht)
+* Fix energy tooltip rendering red orb under custom orb (kiooeht)
+* Fix ClickableUIElement x render position not being calculated correctly (kobting)
+* Custom GridCardSelectScreen that takes CardGroup and callback (alexdriedger)
+* Fix to [REMOVE_SPACE] feature: commas, dots and similar should no longer go to the next line (JohnnyBazooka89)"
+* Updated dev console code (Raz)
+
+#### v5.14.1 ####
+* Fix not rendering cost of playable status/curse cards regression (kiooeht)
+* Fix unique keywords misaligning card descriptions (kiooeht)
+
+#### v5.14.2 ####
+* Fix calculateModifiedCardDamage (kiooeht)
+
+#### v5.15.0 ####
+* Allow custom card tooltips before normal tooltips (kiooeht)
+* Fix ConsoleCommand.addCommand (kiooeht)
+
+#### v5.15.1 ####
+* Support for Slay the Spire 07-17-2019 update (kiooeht)
+* Fix custom energy icons in card descriptions not working in SingleCardViewPopup (kiooeht)
+
+#### v5.16.0-beta ####
+* Support for Slay the Spire 09-09-2019 BETA (kiooeht)
+
+#### v5.16.0-beta.2 ####
+* Fix colored text being offset badly (kiooeht)
+* Fix multi-word keywords not removing underscores (kiooeht)
+* Fix adding and removing Watcher cards (kiooeht)
+* Make Vampires event use standard remove function (kiooeht)
+* Move card preview in SingleCardView to not cover whatmod (kiooeht)
+
+#### v5.16.0-beta.3 ####
+* Fix RitualPower cloneable patch crash (kiooeht)
+
+#### v5.16.0-beta.4 ####
+* Don't show card colors in compendium that contain no cards to avoid crash (kiooeht)
+* Fix `potion list` command changing potion rng (kiooeht)
+* Fix `potion list` command not including potions from other characters (kiooeht)
+* Fix `potion` command not giving potions from other characters (kiooeht)
+* Fix `potion` command not autocompleting potions from other characters (kiooeht)
+* Add whatmod support for potions (kiooeht)
+* Fix custom boss map icons being black square if used a second time (kiooeht)
+* Fix boss map icons leaking memory (kiooeht)
+* Fix dynamic variables always rendering fully opaque (kiooeht)
+* Fix multiword keywords that use underscores (JohnnyBazooka89)
+
+#### v5.17.0 ####
+* Deprecate BASIC_STRIKE and BASIC_DEFEND tags, use STARTER_STRIKE and STARTER_DEFEND instead (kiooeht)
+* Tag Deva Form with FORM (kiooeht)
+* Fix My True Form double adding base game form cards (kiooeht)
+* Fix Smoke Bomb causing player dialog to render in the wrong position (kiooeht)
+* Fix custom character name not visible in compendium for some languages (Celicath)
+* Fix button positions on character select when using 4:3 resolution (kiooeht)
+* Display all characters on character select if only one modded character is loaded (kiooeht)
+* Hide long offscreen starter relic descriptions on character select (kiooeht)
+* Fix `relic add` command not showing Watcher only relics (JohnnyBazooka89)
+* Fix `relic list rare` command incorrectly showing boss relics (JohnnyBazooka89)
+* Fix BaseMod altering encounter rng compared to basegame (kiooeht)
+* Fix colored text issues (Celicath)
+
+#### v5.18.0 ####
+* Move rewards scrolling code from Hubris to BaseMod (kiooeht/erasels)
+
+#### v5.18.1 ####
+* Make certain Watcher cards work with max hand size changes (kiooeht)
+  * Scrawl
+  * Foreign Influence
+  * Meditate
+  * Flicker (deprecated)
+* Fix many actions to work with max hand size changes (kiooeht)
+* Fix bias in boss selection RNG (dbjorge)
+
+#### v5.19.0 ####
+* AutoAdd API for auto-adding cards (kiooeht)
+* Fix character filter in run history (Celicath)
+* Fix history command (Celicath)
+* Hide unnecessary unlock bar (Alchyr)
+* Fix SafeDamageAllEnemies crash (Alchyr)
+* Fix duplicate options when using event command (Alchyr)
+
+#### v5.20.0 ####
+* Fix scrolling tooltips in single-card view omitting some tips when many exist (dbjorge)
+* Custom card frames (Alchyr)
+* Show correct unlock stats on character select screen (Alchyr)
+* Save dev console history across game restarts (kiooeht)
+
+#### v5.20.1 ####
+* Fix crash if mods add unlocks badly (kiooeht)
+
+#### v5.21.0 ####
+* Fix hi-res relic art not being used on mod relics that have it (kiooeht)
+* Custom save fields for potions (kiooeht)
+* CardModifier (JohnnyDevo)
+
+#### v5.21.1 ####
+* Fix CustomRelic using small relic art as large relic art (kiooeht)
+* Remove broken onDiscarded CardModifier hook (JohnnyDevo)
+* Fix crash on very long card text caused by CardMod (JohnnyDevo)
+
+#### v5.22.0 ####
+* Add ModLabeledButton (LordAddy)
+* Make CardModifiers save and load on master deck (JohnnyDevo)
+* Refactor CardModifier alternate cost system (JohnnyDevo)
+* Much more options for how events spawn (Alchyr)
+
+#### v5.23.0 ####
+* Color tiny cards in Run History for modded cards (kiooeht)
+* Fix Expunger description reverting to X (kiooeht)
+* Add not-package filter for AutoAdd (BlankTheEvil)
+* Fix "Hide unnecessary unlock bar" to work on Heart kill (Celicath)
+* Change event utils default behavior to override if no type specified (Alchyr)
+* OnCreateDescriptionSubscriber (JohnnyDevo)
+* XCostModifier interface for changing X cost effect (JohnnyDevo)
+* CardModifier (JohnnyDevo)
+  * Make X costs work with alternate costs
+  * Add annotation for non-savable CardModifiers
+  * Fix save/load duplicating cardmods
+  * Fix non-splittable post-energy resources
+  * Fix hasModifier crash on modifiers without identifiers
+* Remove JavaFX dependency (kiooeht)
+
+#### v5.23.1 ####
+* Fix crash when opening the card compendium (kiooeht)
+
+#### v5.23.2 ####
+* Re-add getColor(float) to stop crash because GOG version of StS is out of date (kiooeht)
+
+#### v5.23.3 ####
+* Allow modded character card modifiers to be localized (kiooeht)
+* ZHS translation of modded character card modifiers (Rita-B)
+* Fix Discovery basegame bugs (kiooeht)
+  * Fix Discovery spamming the log and possibly lagging the game when played
+  * Fix returnTrulyRandomCardInCombat marking (almost) every card as seen
+* Make CardModifierManager.modifiers() public (kiooeht)
+* Fix Potion Lab scroll bounds (kiooeht)
+
+#### v5.24.0 ####
+* Sensory Stone event text for custom characters (kiooeht)
+* Fix upgrade count 0 in hand and deck commands not working (Celicath)
+* Fix ZHS, ZHT, and JPN not displaying color in tooltips (Celicath)
+
+#### v5.25.0 ####
+* Card descriptors (kiooeht)
+
+#### v5.26.0 ####
+* Fix Vigor gain from Attacks (kiooeht)
+* ReflectionHacks improvements (kiooeht)
+  * Change get methods to generic return types
+  * Cache Fields for faster access
+  * Javadoc comments
+  * Update setPrivateInherited to search all superclasses
+  * Add getPrivateInherited
+  * Add privateMethod
+  * Add privateStaticMethod
+* Fix modded character selection background animation (kiooeht)
+* Fix alternate card cost logic to better fit all situtations (JohnnyDevo)
+
+#### v5.27.0 ####
+* Support for Slay the Spire 11-27-2020 BETA (kiooeht)
+
+#### v5.28.0 ####
+* Add get/set X/Y methods to mod config ui elements (erasels)
+* Add ModMinMaxSlider (kiooeht/erasels)
+
+#### v5.28.1 ####
+* Fix DiscoveryAction for more than 2 copies (kiooeht)
+* Refactor CloneablePower code (Raz)
+* Add CloneablePower to base game powers introduced with v2.0 (Raz)
+* Fix crash with act command (Raz)
+
+#### v5.29.0 ####
+* Improve typing for dev console (Alchyr)
+* Fix crash to do with CardModifier with SaveIgnore in the master deck (JohnnyDevo)
+* New CardModifier hook: shouldApply (JohnnyDevo)
+* CardPowerTips (JohnnyDevo)
+  * Display a card in a tooltip
+* CardBorderGlowManager (JohnnyDevo)
+  * Allows card to have multiple glow colors at once
+* No longer cull potion rewards (erasels)
+  * BaseMod allows more than 5 combat rewards
+* Fix custom reward rendering on ultra-wide resolutions (NotInTheFace)
+* Fix character select screen on ultra-wide resolutions (NotInTheFace)
+* VfxBuilder (NotInTheFace)
+
+#### v5.30.0 ####
+* More reliable input canceling (Alchyr)
+* VfxBuilder features (NotInTheFace)
+  * New hook to call after rendering
+  * New hooks for animation phases starting/ending
+  * More interpolations
+
+#### v5.30.1 ####
+* Fix Console being openable while it's not enabled
+* Fix CardModifier atEndOfTurn triggering at the end of monster turns (JohnnyDevo)
+* Fix VFXBuilder to work with packed atlases
+
+#### v5.31.0 ####
+* New CardModifier hook: calculateCardDamage (JohnnyDevo)
+* Change CardModifier copy applying to new copied card after upgrades (JohnnyDevo)
+* * Fix EventUtil override bonus condition crash (Alchyr)
+
+#### v5.32.0 ####
+* Fix all CardMod onUse related hooks to not trigger when unplayable and autoplayed (JohnnyDevo)
+* Add standard common CardMods (Vex)
+* Make character select screen page arrows bigger (NotInTheFace)
+
+#### v5.32.1 ####
+* Fix VfxBuilder.fadeOut not working for fade times greater than 1 second (kiooeht)
+* Fix whatmod tooltip placement on ultrawide resolutions (kiooeht)
+* Fix whatmod appearing in SCV and SRV when whatmod is disabled (kiooeht)
+* Fix card preview position in SCV on ultrawide resolutions (kiooeht)
+
+#### v5.32.2 ####
+* Fix Transient crashing after turn 7 if Fading is removed (kiooeht)
+* Fix mod config panel placement on ultrawide resolutions (kiooeht)
+
+#### v5.32.3 ####
+* Fix possible crash with initializePowerMap and WhatMod (kiooeht)
+* Fix SingleCardView variable width with additional character (Alchyr)
+
+#### v5.33.0 ####
+* Fix AbstractPotion.addToTop being an infinite loop (kiooeht)
+* Reset seen events every 3 acts so they return to the pool in endless (Alchyr)
+* Add NoLibraryType annotation for CardColor SpireEnums (kiooeht)
+* Fix incorrect unlock count in character select screen (codewarrior0)
+* Fix Purple Cards run modifier not working for custom characters (codewarrior0)
+
+#### v5.33.1 ####
+* Fix scrolling tooltips on ultrawide resolutions (kiooeht)
+
+#### v5.34.0 ####
+* Fix custom mode mods sometime persisting between runs (JohnnyDevo)
+* Console command for manipulating variables (Alchyr)
+
+#### v5.34.1 ####
+* Fix crash with custom mods being null
+
+#### v5.34.2 ####
+* Fix card border glow crash in library (JohnnyDevo)
+
 #### dev ####

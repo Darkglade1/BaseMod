@@ -8,21 +8,23 @@ import com.megacrit.cardcrawl.screens.SingleRelicViewPopup;
 import java.lang.reflect.Field;
 
 @SpirePatch(
-    cls="com.megacrit.cardcrawl.screens.SingleRelicViewPopup",
+    clz=SingleRelicViewPopup.class,
     method="renderTips"
 )
 public class RelicView
 {
     public static void Postfix(SingleRelicViewPopup __instance, SpriteBatch sb)
     {
-        try {
-            Field relicField = SingleRelicViewPopup.class.getDeclaredField("relic");
-            relicField.setAccessible(true);
-            AbstractRelic relic = (AbstractRelic) relicField.get(__instance);
+        if (WhatMod.enabled) {
+            try {
+                Field relicField = SingleRelicViewPopup.class.getDeclaredField("relic");
+                relicField.setAccessible(true);
+                AbstractRelic relic = (AbstractRelic) relicField.get(__instance);
 
-            WhatMod.renderModTooltip(sb, relic.getClass());
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            e.printStackTrace();
+                WhatMod.renderModTooltip(sb, relic.getClass());
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

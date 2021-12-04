@@ -1,6 +1,7 @@
 package basemod.patches.com.megacrit.cardcrawl.screens.compendium.CardLibraryScreen;
 
 import basemod.patches.com.megacrit.cardcrawl.screens.mainMenu.ColorTabBar.ColorTabBarFix;
+import com.badlogic.gdx.math.MathUtils;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.cards.AbstractCard;
@@ -13,9 +14,10 @@ import javassist.CtBehavior;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -28,6 +30,7 @@ public class EverythingFix
     public static class Fields
     {
         public static Map<AbstractCard.CardColor, CardGroup> cardGroupMap = new HashMap<>();
+        private static Set<AbstractCard.CardColor> noLibraryTypes = new HashSet<>();
     }
 
     @SpirePatch(
@@ -45,8 +48,17 @@ public class EverythingFix
                 AbstractCard.CardColor[] colors = AbstractCard.CardColor.values();
                 for (int icolor = AbstractCard.CardColor.CURSE.ordinal() + 1; icolor < colors.length; ++icolor) {
                     CardGroup group = new CardGroup(CardGroup.CardGroupType.UNSPECIFIED);
-                    group.group = CardLibrary.getCardList(CardLibrary.LibraryType.valueOf(colors[icolor].name()));
-                    Fields.cardGroupMap.put(colors[icolor], group);
+                    try {
+                        group.group = CardLibrary.getCardList(CardLibrary.LibraryType.valueOf(colors[icolor].name()));
+                        Fields.cardGroupMap.put(colors[icolor], group);
+                    } catch (IllegalArgumentException e) {
+                        NoLibraryType annotation = colors[icolor].getClass().getField(colors[icolor].name()).getAnnotation(NoLibraryType.class);
+                        if (annotation != null) {
+                            Fields.noLibraryTypes.add(colors[icolor]);
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -58,9 +70,8 @@ public class EverythingFix
             @Override
             public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException
             {
-                Matcher finalMatcher = new Matcher.MethodCallMatcher("com.megacrit.cardcrawl.screens.compendium.CardLibraryScreen", "calculateScrollBounds");
-
-                return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), finalMatcher);
+                Matcher finalMatcher = new Matcher.MethodCallMatcher(CardLibraryScreen.class, "calculateScrollBounds");
+                return LineFinder.findInOrder(ctMethodToPatch, finalMatcher);
             }
         }
     }
@@ -79,6 +90,9 @@ public class EverythingFix
                 AbstractCard.CardColor[] colors = AbstractCard.CardColor.values();
                 for (int icolor = AbstractCard.CardColor.CURSE.ordinal() + 1; icolor < colors.length; ++icolor) {
                     CardGroup group = Fields.cardGroupMap.get(colors[icolor]);
+                    if (group == null && Fields.noLibraryTypes.contains(colors[icolor])) {
+                        continue;
+                    }
 
                     @SuppressWarnings("rawtypes")
                     Class[] cArg = new Class[1];
@@ -107,6 +121,28 @@ public class EverythingFix
         {
             if (newSelection == ColorTabBarFix.Enums.MOD) {
                 visibleCards[0] = Fields.cardGroupMap.get(ColorTabBarFix.Fields.getModTab().color);
+            }
+        }
+    }
+
+    @SpirePatch(
+            clz=CardLibraryScreen.class,
+            method="open"
+    )
+    public static class Open
+    {
+        public static void Postfix(CardLibraryScreen __instance)
+        {
+            AbstractCard.CardColor[] colors = AbstractCard.CardColor.values();
+            for (int icolor = AbstractCard.CardColor.CURSE.ordinal() + 1; icolor < colors.length; ++icolor) {
+                CardGroup group = Fields.cardGroupMap.get(colors[icolor]);
+                if (group == null && Fields.noLibraryTypes.contains(colors[icolor])) {
+                    continue;
+                }
+                for (AbstractCard c : group.group) {
+                    c.drawScale = MathUtils.random(0.2F, 0.4F);
+                    c.targetDrawScale = 0.75F;
+                }
             }
         }
     }

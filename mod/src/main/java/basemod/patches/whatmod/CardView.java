@@ -8,21 +8,23 @@ import com.megacrit.cardcrawl.screens.SingleCardViewPopup;
 import java.lang.reflect.Field;
 
 @SpirePatch(
-    cls="com.megacrit.cardcrawl.screens.SingleCardViewPopup",
+    clz=SingleCardViewPopup.class,
     method="renderTips"
 )
 public class CardView
 {
     public static void Postfix(SingleCardViewPopup __instance, SpriteBatch sb)
     {
-        try {
-            Field cardField = SingleCardViewPopup.class.getDeclaredField("card");
-            cardField.setAccessible(true);
-            AbstractCard card = (AbstractCard) cardField.get(__instance);
+        if (WhatMod.enabled) {
+            try {
+                Field cardField = SingleCardViewPopup.class.getDeclaredField("card");
+                cardField.setAccessible(true);
+                AbstractCard card = (AbstractCard) cardField.get(__instance);
 
-            WhatMod.renderModTooltip(sb, card.getClass());
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            e.printStackTrace();
+                WhatMod.renderModTooltip(sb, card.getClass());
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

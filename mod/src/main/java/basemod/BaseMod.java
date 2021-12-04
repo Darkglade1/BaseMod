@@ -1,12 +1,16 @@
 package basemod;
 
 import basemod.abstracts.*;
+import basemod.eventUtil.AddEventParams;
+import basemod.eventUtil.EventUtils;
 import basemod.helpers.RelicType;
 import basemod.helpers.dynamicvariables.BlockVariable;
 import basemod.helpers.dynamicvariables.DamageVariable;
 import basemod.helpers.dynamicvariables.MagicNumberVariable;
 import basemod.interfaces.*;
 import basemod.patches.com.megacrit.cardcrawl.helpers.TopPanel.TopPanelHelper;
+import basemod.patches.com.megacrit.cardcrawl.screens.select.GridCardSelectScreen.GridCardSelectScreenFields;
+import basemod.patches.com.megacrit.cardcrawl.unlock.UnlockTracker.CountModdedUnlockCards;
 import basemod.patches.whatmod.WhatMod;
 import basemod.screens.ModalChoiceScreen;
 import com.badlogic.gdx.Gdx;
@@ -42,6 +46,7 @@ import com.megacrit.cardcrawl.characters.AbstractPlayer.PlayerClass;
 import com.megacrit.cardcrawl.core.AbstractCreature;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
+import com.megacrit.cardcrawl.daily.mods.AbstractDailyMod;
 import com.megacrit.cardcrawl.daily.mods.RedCards;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.events.AbstractEvent;
@@ -66,8 +71,8 @@ import com.megacrit.cardcrawl.screens.stats.AchievementItem;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
+import com.megacrit.cardcrawl.unlock.AbstractUnlock;
 import com.megacrit.cardcrawl.unlock.UnlockTracker;
-import javafx.util.Pair;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.NotFoundException;
@@ -83,7 +88,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -154,6 +158,7 @@ public class BaseMod {
 	private static ArrayList<OnPlayerLoseBlockSubscriber> onPlayerLoseBlockSubscribers;
 	private static ArrayList<OnPlayerDamagedSubscriber> onPlayerDamagedSubscribers;
 	private static ArrayList<EditAchievementsSubscriber> editAchievementsSubscribers;
+	private static ArrayList<OnCreateDescriptionSubscriber> onCreateDescriptionSubscribers;
 
 	private static ArrayList<AbstractCard> redToAdd;
 	private static ArrayList<String> redToRemove;
@@ -161,6 +166,8 @@ public class BaseMod {
 	private static ArrayList<String> greenToRemove;
 	private static ArrayList<AbstractCard> blueToAdd;
 	private static ArrayList<String> blueToRemove;
+	private static ArrayList<AbstractCard> purpleToAdd;
+	private static ArrayList<String> purpleToRemove;
 	private static ArrayList<AbstractCard> colorlessToAdd;
 	private static ArrayList<String> colorlessToRemove;
 	private static ArrayList<AbstractCard> curseToAdd;
@@ -234,6 +241,8 @@ public class BaseMod {
 	private static HashMap<AbstractCard.CardColor, TextureAtlas.AtlasRegion> colorCardEnergyOrbAtlasRegionMap;
 
 	private static HashMap<AbstractPlayer.PlayerClass, HashMap<Integer, CustomUnlockBundle>> unlockBundles;
+	private static HashMap<AbstractPlayer.PlayerClass, ArrayList<String>> unlockCards;
+	private static HashMap<AbstractPlayer.PlayerClass, Integer> maxUnlockLevel;
 
 	private static HashMap<String, CustomSavableRaw> customSaveFields = new HashMap<>();
 
@@ -343,6 +352,10 @@ public class BaseMod {
 			}
 		}
 		return index <= lastBaseCharacterIndex;
+	}
+
+	public static boolean isBaseGameCardColor(AbstractCard.CardColor color) {
+		return color.compareTo(AbstractCard.CardColor.CURSE) <= 0;
 	}
 
 	// initialize -
@@ -473,6 +486,7 @@ public class BaseMod {
 		onPlayerLoseBlockSubscribers = new ArrayList<>();
 		onPlayerDamagedSubscribers = new ArrayList<>();
 		editAchievementsSubscribers = new ArrayList<>();
+		onCreateDescriptionSubscribers = new ArrayList<>();
 	}
 
 	// initializeCardLists -
@@ -483,6 +497,8 @@ public class BaseMod {
 		greenToRemove = new ArrayList<>();
 		blueToAdd = new ArrayList<>();
 		blueToRemove = new ArrayList<>();
+		purpleToAdd = new ArrayList<>();
+		purpleToRemove = new ArrayList<>();
 		colorlessToAdd = new ArrayList<>();
 		colorlessToRemove = new ArrayList<>();
 		curseToAdd = new ArrayList<>();
@@ -539,6 +555,8 @@ public class BaseMod {
 	// initializeUnlocks
 	private static void initializeUnlocks() {
 		unlockBundles = new HashMap<>();
+		unlockCards = new HashMap<>();
+		maxUnlockLevel = new HashMap<>();
 	}
 
 	private static void initializePotionMap() {
@@ -678,9 +696,13 @@ public class BaseMod {
 			CtClass ctCls = pool.get(AbstractPower.class.getName());
 			String url = ctCls.getURL().getFile();
 			int i = url.lastIndexOf('!');
-			url = url.substring(0, i);
-			URL locationURL = new URL(url);
-			finder.add(new File(locationURL.toURI()));
+			if (i >= 0) {
+				url = url.substring(0, i);
+			}
+			if (url.endsWith(".jar")) {
+				URL locationURL = new URL(url);
+				finder.add(new File(locationURL.toURI()));
+			}
 
 			ClassFilter filter = new AndClassFilter(
 					new NotClassFilter(new InterfaceOnlyClassFilter()),
@@ -695,6 +717,9 @@ public class BaseMod {
 					continue;
 				}
 				try {
+					if (!CloneablePowerInterface.class.isAssignableFrom(BaseMod.class.getClassLoader().loadClass(classInfo.getClassName()))) {
+						logger.warn(String.format("Power (%s) isn't Cloneable", classInfo.getClassName()));
+					}
 					for (FieldInfo fieldInfo : classInfo.getFields()) {
 						if (fieldInfo.getName().equals("POWER_ID") && fieldInfo.getValue() instanceof String) {
 							powerMap.put((String) fieldInfo.getValue(),
@@ -821,6 +846,16 @@ public class BaseMod {
 		return blueToRemove;
 	}
 
+	// purple add -
+	public static ArrayList<AbstractCard> getPurpleCardsToAdd() {
+		return purpleToAdd;
+	}
+
+	// purple remove -
+	public static ArrayList<String> getPurpleCardsToRemove() {
+		return purpleToRemove;
+	}
+
 	// colorless add -
 	public static ArrayList<AbstractCard> getColorlessCardsToAdd() {
 		return colorlessToAdd;
@@ -881,6 +916,9 @@ public class BaseMod {
 			case BLUE:
 				blueToAdd.add(card);
 				break;
+			case PURPLE:
+				purpleToAdd.add(card);
+				break;
 			case COLORLESS:
 				colorlessToAdd.add(card);
 				break;
@@ -905,6 +943,8 @@ public class BaseMod {
 			case BLUE:
 				blueToRemove.add(card);
 				break;
+			case PURPLE:
+				purpleToRemove.add(card);
 			case COLORLESS:
 				colorlessToRemove.add(card);
 				break;
@@ -980,6 +1020,9 @@ public class BaseMod {
 			case BLUE:
 				RelicLibrary.addBlue(relic);
 				break;
+			case PURPLE:
+				RelicLibrary.addPurple(relic);
+				break;
 			default:
 				logger.info("tried to add relic of unsupported type: " + relic + " " + type);
 				return;
@@ -1034,6 +1077,15 @@ public class BaseMod {
 						.getPrivateStatic(RelicLibrary.class, "blueRelics");
 				if (blueRelics.containsKey(relic.relicId)) {
 					blueRelics.remove(relic.relicId);
+					RelicLibrary.totalRelicCount--;
+					removeRelicFromTierList(relic);
+				}
+				break;
+			case PURPLE:
+				HashMap<String, AbstractRelic> purpleRelics = (HashMap<String, AbstractRelic>) ReflectionHacks
+						.getPrivateStatic(RelicLibrary.class, "purpleRelics");
+				if (purpleRelics.containsKey(relic.relicId)) {
+					purpleRelics.remove(relic.relicId);
 					RelicLibrary.totalRelicCount--;
 					removeRelicFromTierList(relic);
 				}
@@ -1152,6 +1204,7 @@ public class BaseMod {
 		removeRelic(relic, RelicType.RED);
 		removeRelic(relic, RelicType.GREEN);
 		removeRelic(relic, RelicType.BLUE);
+		removeRelic(relic, RelicType.PURPLE);
 	}
 
 	// lists the IDs of all Relics from all pools. The casts are actually not
@@ -1180,6 +1233,11 @@ public class BaseMod {
 				.getPrivateStatic(RelicLibrary.class, "blueRelics");
 		if (blueRelics != null) {
 			relicIDs.addAll(blueRelics.keySet());
+		}
+		HashMap<String, AbstractRelic> purpleRelics = (HashMap<String, AbstractRelic>) ReflectionHacks
+				.getPrivateStatic(RelicLibrary.class, "purpleRelics");
+		if (purpleRelics != null) {
+			relicIDs.addAll(purpleRelics.keySet());
 		}
 		if (getAllCustomRelics() != null) {
 			for (HashMap<String, AbstractRelic> e : getAllCustomRelics().values()) {
@@ -1226,39 +1284,41 @@ public class BaseMod {
 	// Events
 	//
 
-	//Event hashmaps
-	// Key: Event ID
-	private static HashMap<String, Class<? extends AbstractEvent>> allCustomEvents = new HashMap<>();
-	// Key: Dungeon ID
-	// Inner Key: Event ID
-	private static HashMap<String, HashMap<String, Class<? extends AbstractEvent>>> customEvents = new HashMap<>();
+	// Additional documentation can be found in EventUtils.
 
 	public static void addEvent(String eventID, Class<? extends AbstractEvent> eventClass) {
-		addEvent(eventID, eventClass, (String)null);
+		addEvent(new AddEventParams.Builder(eventID, eventClass).create());
 	}
 
 	public static void addEvent(String eventID, Class<? extends AbstractEvent> eventClass, String dungeonID) {
-		if (!customEvents.containsKey(dungeonID)) {
-			customEvents.put(dungeonID, new HashMap<>());
-		}
-		logger.info("Adding " + eventID + " to " + (dungeonID != null ? dungeonID : "ALL") + " pool");
-
-		customEvents.get(dungeonID).put(eventID, eventClass);
-		allCustomEvents.put(eventID, eventClass);
-		if (eventID.contains(" ")) {
-			underScoreEventIDs.put(eventID.replace(' ', '_'), eventID);
-		}
+		addEvent(
+				new AddEventParams.Builder(eventID, eventClass)
+						.dungeonID(dungeonID)
+						.create()
+		);
 	}
 
+	public static void addEvent(AddEventParams params) {
+		EventUtils.registerEvent(
+				params.eventID,
+				params.eventClass,
+				params.playerClass,
+				params.dungeonIDs.toArray(new String[0]),
+				params.spawnCondition,
+				params.overrideEventID,
+				params.bonusCondition,
+				params.eventType
+		);
+	}
+
+	//implemented to avoid issues if someone uses them.
+	@Deprecated //Labeled as deprecated because changes here will have no impact on what events appear.
 	public static HashMap<String, Class<? extends AbstractEvent>> getEventList(String dungeonID) {
-		if (customEvents.containsKey(dungeonID)) {
-			return customEvents.get(dungeonID);
-		}
-		return new HashMap<>();
+		return EventUtils.getDungeonEvents(dungeonID);
 	}
 
 	public static Class<? extends AbstractEvent> getEvent(String eventID) {
-		return allCustomEvents.get(eventID);
+		return EventUtils.getEventClass(eventID);
 	}
 
 	//
@@ -1409,21 +1469,21 @@ public class BaseMod {
 
 	public static class BossInfo {
 		public final String id;
-		public final Texture bossMap;
-		public final Texture bossMapOutline;
+		private final String bossMap;
+		private final String bossMapOutline;
 
 		private BossInfo(String id, String mapIcon, String mapIconOutline) {
 			this.id = id;
-			if (mapIcon != null) {
-				bossMap = ImageMaster.loadImage(mapIcon);
-			} else {
-				bossMap = null;
-			}
-			if (mapIconOutline != null) {
-				bossMapOutline = ImageMaster.loadImage(mapIconOutline);
-			} else {
-				bossMapOutline = null;
-			}
+			bossMap = mapIcon;
+			bossMapOutline = mapIconOutline;
+		}
+
+		public Texture loadBossMap() {
+			return ImageMaster.loadImage(bossMap);
+		}
+
+		public Texture loadBossMapOutline() {
+			return ImageMaster.loadImage(bossMapOutline);
 		}
 	}
 
@@ -1534,6 +1594,10 @@ public class BaseMod {
 
 	// add new unlock bundle
 	public static void addUnlockBundle(CustomUnlockBundle bundle, AbstractPlayer.PlayerClass c, int unlockLevel) {
+		if (bundle == null) {
+			return;
+		}
+
 		if (!unlockBundles.containsKey(c)) {
 			HashMap<Integer, CustomUnlockBundle> newBundles = new HashMap<>();
 			newBundles.put(unlockLevel, bundle);
@@ -1541,6 +1605,25 @@ public class BaseMod {
 		} else {
 			HashMap<Integer, CustomUnlockBundle> bundles = unlockBundles.get(c);
 			bundles.put(unlockLevel, bundle);
+		}
+
+		if (bundle.unlockType == AbstractUnlock.UnlockType.CARD)
+		{
+			if (!unlockCards.containsKey(c))
+				unlockCards.put(c, new ArrayList<>());
+
+			for (String s : bundle.getUnlockIDs())
+			{
+				if (!unlockCards.get(c).contains(s))
+					unlockCards.get(c).add(s);
+			}
+		}
+
+		if (maxUnlockLevel.containsKey(c)) {
+			maxUnlockLevel.put(c, Math.max(maxUnlockLevel.get(c), unlockLevel + 1));
+		}
+		else {
+			maxUnlockLevel.put(c, unlockLevel + 1);
 		}
 	}
 
@@ -1558,6 +1641,26 @@ public class BaseMod {
 			return null;
 		}
 		return levelMap.get(unlockLevel);
+	}
+
+	// get list of unlocks (cards)
+	public static ArrayList<String> getUnlockCards(AbstractPlayer.PlayerClass c)
+	{
+		return unlockCards.get(c);
+	}
+
+	// get the number of unlock levels for class
+	public static int getMaxUnlockLevel(AbstractPlayer p)
+	{
+		return getMaxUnlockLevel(p.chosenClass);
+	}
+
+	public static int getMaxUnlockLevel(AbstractPlayer.PlayerClass c)
+	{
+		if (maxUnlockLevel.containsKey(c)) {
+			return maxUnlockLevel.get(c);
+		}
+		return 0;
 	}
 
 	//
@@ -1632,6 +1735,8 @@ public class BaseMod {
 				return AbstractCard.orb_green;
 			case BLUE:
 				return AbstractCard.orb_blue;
+			case PURPLE:
+				return AbstractCard.orb_purple;
 			case COLORLESS:
 				return getCardSmallEnergy(); // for colorless cards, use the player color
 			default:
@@ -1662,14 +1767,14 @@ public class BaseMod {
 			CharacterOption option = new CharacterOption(
 					character.getLocalizedCharacterName(),
 					CardCrawlGame.characterManager.recreateCharacter(character.chosenClass),
-					// note that these will fail so we patch this in
-					// basemode.patches.com.megacrit.cardcrawl.screens.charSelect.CharacterOption.CtorSwitch
-					playerSelectButtonMap.get(character.chosenClass), playerPortraitMap.get(character.chosenClass)
+					ImageMaster.loadImage(playerSelectButtonMap.get(character.chosenClass)),
+					ImageMaster.loadImage(playerPortraitMap.get(character.chosenClass))
 			);
 			options.add(option);
 		}
 		// Sort alphabetically by character name
 		options.sort(Comparator.comparing(o -> o.name));
+
 		return options;
 	}
 
@@ -2418,7 +2523,13 @@ public class BaseMod {
 	public static void publishEditStrings() {
 		logger.info("begin editing localization strings");
 
-		BaseMod.loadCustomStringsFile(RunModStrings.class, "localization/basemod/customMods.json");
+		EventUtils.loadBaseEvents();
+
+		String path = String.format("localization/basemod/%s/customMods.json", Settings.language.name().toLowerCase());
+		if (!Gdx.files.internal(path).exists()) {
+			path = String.format("localization/basemod/%s/customMods.json", Settings.GameLanguage.ENG.name().toLowerCase());
+		}
+		BaseMod.loadCustomStringsFile(RunModStrings.class, path);
 
 		for (EditStringsSubscriber sub : editStringsSubscribers) {
 			sub.receiveEditStrings();
@@ -2479,12 +2590,16 @@ public class BaseMod {
 		for (SetUnlocksSubscriber sub : setUnlocksSubscribers) {
 			sub.receiveSetUnlocks();
 		}
+
+		CountModdedUnlockCards.enabled = true;
+		CountModdedUnlockCards.countModdedUnlocks(); //call it manually, as the count occurs during refresh normally.
+
 		unsubscribeLaterHelper(SetUnlocksSubscriber.class);
 	}
 
 	// publishOnCardUse -
 	public static void publishOnCardUse(AbstractCard c) {
-		logger.info("publish on card use");
+		logger.info("publish on card use: " + (c == null ? "null" : c.cardID));
 
 		for (OnCardUseSubscriber sub : onCardUseSubscribers) {
 			sub.receiveCardUsed(c);
@@ -2575,18 +2690,27 @@ public class BaseMod {
 	public static void publishAddCustomModeMods(List<CustomMod> modList) {
 		logger.info("publishAddCustomModeMods");
 
+		String modType = "legacy"; 	//if community consensus thinks character card mods should be available on the daily, change this to "generic"
+									//maybe make this into a config? Idk that's out of this fix's scope.
+		HashMap<String, AbstractDailyMod> map = ReflectionHacks.getPrivateStatic(ModHelper.class, modType + "Mods");
+
 		CustomMod charMod = new CustomMod("Modded Character Cards", "p", false);
 		for (AbstractPlayer character : getModdedCharacters()) {
 			CustomMod mod = new CustomMod(RedCards.ID, "g", true);
 			mod.ID = character.chosenClass.name() + charMod.name;
-			mod.name = character.getLocalizedCharacterName() + charMod.name;
-			mod.description = character.getLocalizedCharacterName() + charMod.description;
+			mod.name = String.format(charMod.name, character.getLocalizedCharacterName());
+			mod.description = String.format(charMod.description, character.getLocalizedCharacterName());
 			String label = FontHelper.colorString("[" + mod.name + "]", mod.color) + " " + mod.description;
 			ReflectionHacks.setPrivate(mod, CustomMod.class, "label", label);
 			float height = -FontHelper.getSmartHeight(FontHelper.charDescFont, label, 1050.0F * Settings.scale, 32.0F * Settings.scale) + 70.0F * Settings.scale;
 			ReflectionHacks.setPrivate(mod, CustomMod.class, "height", height);
 
 			insertCustomMod(modList, mod);
+
+			if (map != null) {
+				AbstractDailyMod dailyMod = new AbstractDailyMod(mod.ID, mod.name, mod.description, "diverse.png", true, character.chosenClass);
+				map.put(dailyMod.modID, dailyMod);
+			}
 		}
 
 		for (AddCustomModeModsSubscriber sub : addCustomModeModsSubscribers) {
@@ -2647,6 +2771,17 @@ public class BaseMod {
 
 		unsubscribeLaterHelper(OnPlayerDamagedSubscriber.class);
 		return amount;
+	}
+
+	public static String publishOnCreateDescription(String rawDescription, AbstractCard card) {
+		//logger.info("publish on card description initialized"); //too much logging?
+
+		for (OnCreateDescriptionSubscriber sub : onCreateDescriptionSubscribers) {
+			rawDescription = sub.receiveCreateCardDescription(rawDescription, card);
+		}
+
+		unsubscribeLaterHelper(OnCreateDescriptionSubscriber.class);
+		return rawDescription;
 	}
 
 	//
@@ -2724,6 +2859,7 @@ public class BaseMod {
 		subscribeIfInstance(onPlayerLoseBlockSubscribers, sub, OnPlayerLoseBlockSubscriber.class);
 		subscribeIfInstance(onPlayerDamagedSubscribers, sub, OnPlayerDamagedSubscriber.class);
 		subscribeIfInstance(editAchievementsSubscribers, sub, EditAchievementsSubscriber.class);
+		subscribeIfInstance(onCreateDescriptionSubscribers, sub, OnCreateDescriptionSubscriber.class);
 	}
 
 	// subscribe -
@@ -2821,6 +2957,8 @@ public class BaseMod {
 			onPlayerDamagedSubscribers.add((OnPlayerDamagedSubscriber) sub);
 		} else if (additionClass.equals(EditAchievementsSubscriber.class)) {
 			editAchievementsSubscribers.add((EditAchievementsSubscriber) sub);
+		} else if (additionClass.equals(OnCreateDescriptionSubscriber.class)) {
+			onCreateDescriptionSubscribers.add((OnCreateDescriptionSubscriber) sub);
 		}
 	}
 
@@ -2873,6 +3011,7 @@ public class BaseMod {
 		unsubscribeIfInstance(onPlayerLoseBlockSubscribers, sub, OnPlayerLoseBlockSubscriber.class);
 		unsubscribeIfInstance(onPlayerDamagedSubscribers, sub, OnPlayerDamagedSubscriber.class);
 		unsubscribeIfInstance(editAchievementsSubscribers, sub, EditAchievementsSubscriber.class);
+		unsubscribeIfInstance(onCreateDescriptionSubscribers, sub, OnCreateDescriptionSubscriber.class);
 	}
 
 	// unsubscribe -
@@ -2972,6 +3111,8 @@ public class BaseMod {
 			onPlayerDamagedSubscribers.remove(sub);
 		} else if (removalClass.equals(EditAchievementsSubscriber.class)) {
 			editAchievementsSubscribers.remove(sub);
+		} else if (removalClass.equals(OnCreateDescriptionSubscriber.class)) {
+			onCreateDescriptionSubscribers.remove(sub);
 		}
 	}
 
@@ -3011,5 +3152,29 @@ public class BaseMod {
 
 	public static String findCallingModName() {
 		return null;
+	}
+
+	@SuppressWarnings("unused")
+	/**
+	 * Open a {@link com.megacrit.cardcrawl.screens.select.GridCardSelectScreen} for selecting cards.
+	 * Executes a callback function with the cards selected once selection is completed. Method must
+	 * be called after {@link AbstractDungeon} has been initialized
+	 *
+	 * @param group Group of cards to select from
+	 * @param numCards Number of cards to select
+	 * @param tipMsg Tip message displayed at the bottom of the screen
+	 * @param callback Callback function that is executed once card selection is complete. This function
+	 *                 is not executed if the card selection is canceled/skipped.
+	 *
+	 *                 Example callback function: (cards) -> { cards.forEach(c -> logger.debug(c.cardID)); }
+	 */
+	public static void openCustomGridScreen(CardGroup group, int numCards, String tipMsg, GridCardSelectScreenFields.GridCallback callback) {
+		logger.debug("Opening custom grid screen");
+		String gridCancelText = CardCrawlGame.languagePack.getUIString("CardRewardScreen").TEXT[0];
+		AbstractDungeon.gridSelectScreen.open(group, numCards, tipMsg, false);
+		AbstractDungeon.overlayMenu.cancelButton.show(gridCancelText);
+		AbstractDungeon.dynamicBanner.hide();
+		GridCardSelectScreenFields.forCustomReward.set(AbstractDungeon.gridSelectScreen, true);
+		GridCardSelectScreenFields.customCallback.set(AbstractDungeon.gridSelectScreen, callback);
 	}
 }

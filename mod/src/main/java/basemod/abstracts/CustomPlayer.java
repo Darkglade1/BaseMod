@@ -5,6 +5,7 @@ import basemod.animations.AbstractAnimation;
 import basemod.animations.G3DJAnimation;
 import basemod.animations.SpineAnimation;
 import basemod.interfaces.ModelRenderSubscriber;
+import basemod.patches.com.megacrit.cardcrawl.unlock.UnlockTracker.CountModdedUnlockCards;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,6 +13,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
+import com.evacipated.cardcrawl.modthespire.lib.SpireOverride;
+import com.evacipated.cardcrawl.modthespire.lib.SpireSuper;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.Settings;
@@ -208,8 +211,7 @@ public abstract class CustomPlayer extends AbstractPlayer implements ModelRender
 	@Override
 	public int getUnlockedCardCount()
 	{
-		// TODO
-		return 0;
+		return CountModdedUnlockCards.getUnlockedCardCount(chosenClass);
 	}
 
 	@Override
@@ -281,6 +283,11 @@ public abstract class CustomPlayer extends AbstractPlayer implements ModelRender
 		return characterStrings;
 	}
 
+	public String getSensoryStoneText()
+	{
+		return null;
+	}
+
 	@Override
 	public void refreshCharStat()
 	{
@@ -302,6 +309,19 @@ public abstract class CustomPlayer extends AbstractPlayer implements ModelRender
 		refreshHitboxLocation();
 	}
 
+	@SpireOverride
+	protected void updateEscapeAnimation()
+	{
+		if (escapeTimer != 0) {
+			if (flipHorizontal) {
+				dialogX -= Gdx.graphics.getDeltaTime() * 400f * Settings.scale;
+			} else {
+				dialogX += Gdx.graphics.getDeltaTime() * 500f * Settings.scale;
+			}
+		}
+		SpireSuper.call();
+	}
+
 	public Texture getCutsceneBg()
 	{
 		return ImageMaster.loadImage("images/scenes/redBg.jpg");
@@ -319,5 +339,11 @@ public abstract class CustomPlayer extends AbstractPlayer implements ModelRender
 	public void updateVictoryVfx(ArrayList<AbstractGameEffect> effects)
 	{
 
+	}
+
+	@Override
+	public String getPortraitImageName()
+	{
+		return BaseMod.getPlayerPortrait(chosenClass);
 	}
 }
